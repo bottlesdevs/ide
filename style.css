@@ -1,0 +1,11 @@
+.omnibar {
+    border-radius: 4px;
+    border: 1px solid alpha(@borders, 0.8);
+    background: @theme_bg_color;
+    padding: 6px;
+}
+
+.file-entry,
+.suggestion-entry {
+    padding: 5px 10px;
+}

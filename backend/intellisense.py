@@ -1,4 +1,5 @@
 import re
+import yaml
 from gi.repository import Gtk, GObject, GtkSource
 
 
@@ -7,12 +8,13 @@ class Intellisense(GObject.GObject, GtkSource.CompletionProvider):
     suggestions = {
         "install_msi": {
             "name": "install_msi",
-            "content": {
+            "content": [{
+                "action": "install_msi",
                 "file_name": "Example.msi",
                 "url": "https://example/Example.msi",
                 "file_checksum": "MD5_CHECKSUM",
                 "arguments": "--example"
-            }
+            }]
         }
     }
 
@@ -49,7 +51,8 @@ class Intellisense(GObject.GObject, GtkSource.CompletionProvider):
             if text:
                 for key, value in self.suggestions.items():
                     if re.search(text, key):
-                        proposals.append(GtkSource.CompletionItem(label=key, text=key, icon=icon, info=None))
+                        content = yaml.dump(value["content"], default_flow_style=False, indent=2, sort_keys=False)
+                        proposals.append(GtkSource.CompletionItem(label=key, text=content, icon=icon, info=None))
 
         context.add_proposals(self, proposals, True)
         return

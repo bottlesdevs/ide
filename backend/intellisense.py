@@ -51,7 +51,7 @@ class Intellisense(GObject.GObject, GtkSource.CompletionProvider):
             if text:
                 for key, value in self.suggestions.items():
                     if re.search(text, key):
-                        content = yaml.dump(value["content"], default_flow_style=False, indent=2, sort_keys=False)
+                        content = yaml.dump(value["content"], default_flow_style=False, indent=4, sort_keys=False)
                         proposals.append(GtkSource.CompletionItem(label=key, text=content, icon=icon, info=None))
 
         context.add_proposals(self, proposals, True)

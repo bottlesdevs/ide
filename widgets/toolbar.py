@@ -6,6 +6,14 @@ from gi.repository import Gtk, Gdk
 class Toolbar(Gtk.HeaderBar):
     __ico_size = Gtk.IconSize.BUTTON
 
+    status_box = Gtk.Box()
+    title = Gtk.Label.new("Bottles IDE")
+    debug_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    spinner = Gtk.Spinner()
+    btn_open = Gtk.Button.new_from_icon_name("document-open-symbolic", __ico_size)
+    btn_save = Gtk.Button.new_from_icon_name("document-save-symbolic", __ico_size)
+    btn_hash = Gtk.Button.new_from_icon_name("dialog-password-symbolic", __ico_size)
+
     def __init__(self, app):
         Gtk.HeaderBar.__init__(self, show_close_button=True)
         self.app = app
@@ -14,14 +22,6 @@ class Toolbar(Gtk.HeaderBar):
         self.set_status("ok")
     
     def build_widgets(self):
-        self.btn_open = Gtk.Button.new_from_icon_name("document-open-symbolic", self.__ico_size)
-        self.btn_save = Gtk.Button.new_from_icon_name("document-save-symbolic", self.__ico_size)
-        self.btn_hash = Gtk.Button.new_from_icon_name("dialog-password-symbolic", self.__ico_size)
-        self.status_box = Gtk.Box()
-        self.title = Gtk.Label.new("Bottles IDE")
-        self.debug_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.spinner = Gtk.Spinner()
-
         self.btn_open.set_tooltip_text("Open a file")
         self.btn_save.set_tooltip_text("Save the file")
         self.btn_hash.set_tooltip_text("Get the MD5 hash of a file")
@@ -46,10 +46,21 @@ class Toolbar(Gtk.HeaderBar):
         self.btn_hash.connect("clicked", self.on_hash_clicked)
     
     def on_open_clicked(self, widget):
-        dialog = Gtk.FileChooserDialog("Open File", None, Gtk.FileChooserAction.OPEN,
-                                       (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                        Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        # only .yaml .yml files
+        dialog = Gtk.FileChooserDialog(
+            "Open file",
+            None,
+            Gtk.FileChooserAction.OPEN,
+            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
+        )
+        yml_filter = Gtk.FileFilter()
+        yml_filter.set_name("YAML files")
+        yml_filter.add_pattern("*.yaml")
+        yml_filter.add_pattern("*.yml")
+        dialog.add_filter(yml_filter)
+        dialog.set_current_folder(os.path.expanduser("~"))
         response = dialog.run()
+
         if response == Gtk.ResponseType.OK:
             self.title.set_text(os.path.basename(dialog.get_filename()))
             self.set_status("ok")

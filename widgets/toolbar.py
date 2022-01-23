@@ -1,6 +1,6 @@
 import os
 import hashlib
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
 
 
 class Toolbar(Gtk.HeaderBar):
@@ -42,7 +42,7 @@ class Toolbar(Gtk.HeaderBar):
     
     def connect_signals(self):
         self.btn_open.connect("clicked", self.on_open_clicked)
-        # self.btn_save.connect("clicked", self.on_save_clicked)
+        self.btn_save.connect("clicked", self.on_save_clicked)
         self.btn_hash.connect("clicked", self.on_hash_clicked)
     
     def on_open_clicked(self, widget):
@@ -72,6 +72,39 @@ class Toolbar(Gtk.HeaderBar):
             self.app.knock()
         
         dialog.destroy()
+        file_name = os.path.basename(file_name)
+        self.set_notice(f"{file_name} opened")
+    
+    def on_save_clicked(self, widget):
+        current = self.app.storage.get_current_file()
+        if current:
+            file = self.app.storage.get_file(current)
+            if file["name"] in [None, "", "untitled"]:
+                self.save_with_dialog(widget)
+            else:
+                with open(file["name"], "w") as f:
+                    f.write(file["content"])
+                self.set_notice(f"Changes saved")
+        else:
+            self.set_notice("An error occurred while saving")
+    
+    def save_with_dialog(self, widget):
+        self.spinner.start()
+        dialog = Gtk.FileChooserDialog("Save file", None, Gtk.FileChooserAction.SAVE,
+            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
+        dialog.set_current_folder(os.path.expanduser("~"))
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            file_name = dialog.get_filename()
+            self.app.storage.add_file(file_name, "")
+            self.app.storage.set_current_file(file_name)
+            self.app.knock()
+
+        dialog.destroy()
+        self.spinner.stop()
+        file_name = os.path.basename(file_name)
+        self.set_notice(f"Saved as {file_name}")
 
     def on_hash_clicked(self, widget):
         self.spinner.start()
@@ -79,10 +112,10 @@ class Toolbar(Gtk.HeaderBar):
                                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                         Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
         response = dialog.run()
+
         if response == Gtk.ResponseType.OK:
             file = dialog.get_filename()
             checksum = hashlib.md5()
-
             try:
                 with open(file, "rb") as f:
                     for chunk in iter(lambda: f.read(4096), b""):
@@ -93,8 +126,10 @@ class Toolbar(Gtk.HeaderBar):
                 clipboard.store()
             except FileNotFoundError:
                 return False
+
         dialog.destroy()
         self.spinner.stop()
+        self.set_notice(f"Hash copied to clipboard")
     
     def set_status(self, status):
         statues = {
@@ -117,3 +152,8 @@ class Toolbar(Gtk.HeaderBar):
             self.set_status(status)
         else:
             self.title.set_text("Bottles IDE")
+
+    def set_notice(self, msg):
+        _title = self.title.get_text()
+        self.title.set_text(msg)
+        GLib.timeout_add(2000, self.title.set_text, _title)
